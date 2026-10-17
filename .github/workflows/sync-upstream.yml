@@ -225,24 +225,34 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           PAGES_PROJECT_NAME: ${{ secrets.PAGES_PROJECT_NAME }}
+          PAGES_BACKEND_PATH: ${{ secrets.PAGES_BACKEND_PATH }}
         run: |
           echo "Setting SCRIPT_ENGINE=quickjs for Pages project: ${PAGES_PROJECT_NAME}"
+          # 组装 SUB_STORE_FRONTEND_BACKEND_PATH（Pages 管理 API 密码前缀）。
+          # 注意：env_vars 整体替换语义，两个变量必须始终一起下发，
+          # 否则单独 PATCH 会把对方清掉。
+          if [ -n "${PAGES_BACKEND_PATH}" ]; then
+            PATH_ENTRY="\"SUB_STORE_FRONTEND_BACKEND_PATH\": { \"value\": \"${PAGES_BACKEND_PATH}\", \"type\": \"secret_text\" }"
+          else
+            PATH_ENTRY=""
+          fi
           RESP=$(curl -s -X PATCH \
             "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/${PAGES_PROJECT_NAME}" \
             -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d '{
-              "deployment_configs": {
-                "production": {
-                  "env_vars": {
-                    "SCRIPT_ENGINE": {
-                      "value": "quickjs",
-                      "type": "plain_text"
+            -d "{
+              \"deployment_configs\": {
+                \"production\": {
+                  \"env_vars\": {
+                    \"SCRIPT_ENGINE\": {
+                      \"value\": \"quickjs\",
+                      \"type\": \"plain_text\"
                     }
+                    ${PATH_ENTRY:+, ${PATH_ENTRY}}
                   }
                 }
               }
-            }')
+            }")
           SUCCESS=$(echo "$RESP" | jq -r '.success // false')
           if [ "$SUCCESS" = "true" ]; then
             echo "Pages environment variables set successfully"
