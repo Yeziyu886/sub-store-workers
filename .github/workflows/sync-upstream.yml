@@ -163,6 +163,20 @@ jobs:
             echo "::warning::Worker bundle gzipped size ${GZIP_KB} KB exceeds Cloudflare free tier 3 MiB limit (paid plan required)"
           fi
 
+      - name: Verify lodash injection in bundle
+        if: steps.check.outputs.needed == 'true'
+        working-directory: sub-store-workers
+        run: |
+          # 保险丝：lodash 沙箱注入是社区脚本（如 xream lite/index.js）能生效的
+          # 前提。它位于 fork 独有文件 src/vendor/quickjs-executor.js，上游同步
+          # 不会覆盖；但任何未来的本地重构都可能误删，这里在部署前断言，
+          # 确保坏构建永远到不了生产环境。
+          if ! grep -q "globalThis.lodash" dist/worker.js; then
+            echo "::error::worker bundle is missing the lodash sandbox injection (globalThis.lodash); community scripts such as xream lite/index.js would silently stop working"
+            exit 1
+          fi
+          echo "OK: lodash injection present in worker bundle"
+
       - name: Generate wrangler.toml
         if: steps.check.outputs.needed == 'true'
         working-directory: sub-store-workers
