@@ -1,11 +1,11 @@
 {
   "name": "sub-store-workers",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Sub-Store on Cloudflare Workers",
   "private": true,
   "scripts": {
     "build": "node esbuild.js",
-    "test": "mocha \"src/test/**/*.spec.js\" --require @babel/register --recursive",
+    "test": "mocha \"src/test/**/*.spec.js\" --require ./src/test/register.js --recursive",
     "dev": "wrangler dev",
     "deploy": "npm run build && wrangler deploy",
     "deploy:pages": "npm run build && node -e \"const fs=require('fs');fs.mkdirSync('pages-dist',{recursive:true});fs.copyFileSync('dist/worker.js','pages-dist/_worker.js');fs.copyFileSync('dist/quickjs.wasm','pages-dist/quickjs.wasm')\" && wrangler pages deploy pages-dist --project-name sub-store --branch main",

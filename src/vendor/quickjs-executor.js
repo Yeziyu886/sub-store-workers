@@ -26,6 +26,10 @@
  */
 
 import quickjsWasmModule from './quickjs.wasm';
+// lodash 完整源码（esbuild 虚拟模块，见 esbuild.js 的 lodashSourcePlugin）。
+// 不能用 import lodash from 'lodash'：宿主 lodash 实例的函数无法通过
+// JSON 序列化注入 QuickJS 沙箱（见 injectLodash 注释）。
+import lodashSource from 'lodash-source';
 import YAML from '@/utils/yaml';
 
 // 使用全局作用域缓存，避免跨请求重复编译 WASM
@@ -170,6 +174,48 @@ function injectAPI(context, api) {
 }
 
 /**
+ * 在沙箱中注入 lodash 全局变量
+ *
+ * 上游 createDynamicFunction 通过 new Function('lodash', ...) 把宿主 lodash
+ * 实例作为命名参数传给用户脚本（xream 等社区脚本依赖全局 lodash）。
+ * QuickJS 沙箱无法直接接收宿主函数对象——injectAPI 的 JSON 序列化会把
+ * 函数全部丢掉，lodash 会变成 {}，脚本内 _.get(...) 直接抛
+ * "_.get is not a function"，表现为「脚本不生效」。
+ *
+ * 因此改为在沙箱内执行 lodash 源码：lodash UMD 构建顶层执行时会把自身
+ * 挂到 globalThis._（QuickJS evalCode 的顶层 this 即 globalThis），
+ * 这里再显式暴露为全局 lodash，与上游行为一致。
+ *
+ * @param {object} context - QuickJSContext
+ */
+function injectLodash(context) {
+    var result = context.evalCode(
+        lodashSource +
+            '\n;if (typeof globalThis._ !== "undefined" && globalThis._) { globalThis.lodash = globalThis._; }',
+    );
+    if (result.error) {
+        var errMsg = getErrorMessage(context, result.error);
+        result.error.dispose();
+        throw new Error('Failed to inject lodash: ' + errMsg);
+    }
+    if (result.value) {
+        result.value.dispose();
+    }
+}
+
+/**
+ * 判断脚本是否引用全局 lodash。
+ * 上游无论脚本是否使用都会传入 lodash；此处做门控是为了不给不依赖
+ * lodash 的脚本增加约 30ms 的源码解析开销（每次执行都会新建沙箱）。
+ *
+ * @param {string} script - 用户脚本（或包裹后的脚本）
+ * @returns {boolean}
+ */
+function needsLodash(script) {
+    return typeof script === 'string' && /\blodash\b/.test(script);
+}
+
+/**
  * 在 QuickJS 沙箱中执行脚本，返回函数句柄
  *
  * 复刻上游 createDynamicFunction 的 IIFE 包裹行为：
@@ -192,6 +238,13 @@ async function executeInSandbox(script, name, api) {
 
     try {
         injectAPI(context, api);
+
+        // 复刻上游 createDynamicFunction 的 lodash 全局参数注入。
+        // 必须做：社区脚本（如 xream lite/index.js 的 `const _ = lodash`）
+        // 依赖该全局，缺了会直接 ReferenceError 导致脚本不生效。
+        if (needsLodash(script)) {
+            injectLodash(context);
+        }
 
         // 复刻上游 new Function() 行为：
         //   body = `${script}\n return ${name}`

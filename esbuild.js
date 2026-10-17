@@ -328,6 +328,37 @@ const nodeStubPlugin = {
     },
 };
 
+/** 插件：lodash 源码虚拟模块（`import lodashSource from 'lodash-source'`）
+ *
+ * QuickJS 沙箱需要完整的 lodash 源码字符串：宿主 lodash 实例的函数无法
+ * 通过 JSON 序列化注入沙箱，因此把 lodash.min.js 的原文作为常量打包进
+ * worker bundle，运行时在沙箱内执行（见 quickjs-executor.js 的 injectLodash）。
+ *
+ * 解析走 require.resolve('lodash') 的目录，保证与 node_modules 中实际
+ * 安装的版本一致，不依赖 lodash 包内部的 exports 字段。
+ */
+const lodashSourcePlugin = {
+    name: 'lodash-source',
+    setup(build) {
+        build.onResolve({ filter: /^lodash-source$/ }, () => ({
+            path: 'lodash-source',
+            namespace: 'lodash-source-ns',
+        }));
+        build.onLoad({ filter: /.*/, namespace: 'lodash-source-ns' }, () => {
+            const lodashMain = require.resolve('lodash');
+            const lodashFile = path.join(
+                path.dirname(lodashMain),
+                'lodash.min.js',
+            );
+            const source = fs.readFileSync(lodashFile, 'utf8');
+            return {
+                contents: `module.exports = ${JSON.stringify(source)};`,
+                loader: 'js',
+            };
+        });
+    },
+};
+
 !(async () => {
     console.log('Building Sub-Store Workers...');
     console.log(`Workers source: ${WORKERS_SRC}`);
@@ -344,7 +375,7 @@ const nodeStubPlugin = {
         format: 'esm',
         target: 'es2022',
         outfile: path.join(__dirname, 'dist', 'worker.js'),
-        plugins: [aliasPlugin, peggyPrecompilePlugin, evalRewritePlugin, nodeStubPlugin],
+        plugins: [aliasPlugin, peggyPrecompilePlugin, evalRewritePlugin, nodeStubPlugin, lodashSourcePlugin],
         loader: {
             '.wasm': 'copy',
         },

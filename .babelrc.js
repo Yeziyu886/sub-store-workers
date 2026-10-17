@@ -55,6 +55,12 @@ module.exports = {
                         resolveFile(path.join(WORKERS_SRC, relPath)) ||
                         resolveFile(path.join(ORIGINAL_SRC, relPath)) ||
                         path.join(WORKERS_SRC, relPath),
+                    // 测试专用桩（仅 @babel/register 环境生效，不影响 esbuild 构建）：
+                    // lodash-source：esbuild 虚拟模块的 Node 等价物
+                    '^lodash-source$': path.resolve(
+                        __dirname,
+                        'src/test/stubs/lodash-source.js',
+                    ),
                 },
             },
         ],
