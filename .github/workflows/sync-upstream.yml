@@ -197,7 +197,7 @@ jobs:
           [vars]
           SCRIPT_ENGINE = "quickjs"
           SUB_STORE_BACKEND_CUSTOM_NAME = "Workers"
-          SUB_STORE_BACKEND_CUSTOM_ICON = "https://cdn.jsdelivr.net/gh/ios151/sub-store-workers@main/png/cloudflare.png"
+          SUB_STORE_BACKEND_CUSTOM_ICON = "https://cdn.jsdelivr.net/gh/Yeziyu886/sub-store-workers@main/png/cloudflare.png"
           TOML
           sed -i 's/^          //' wrangler.toml
           sed -i "s/__KV_ID__/${{ secrets.KV_NAMESPACE_ID }}/" wrangler.toml
