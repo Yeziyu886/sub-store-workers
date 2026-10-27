@@ -1,6 +1,6 @@
 <div align="center">
 <br>
-<img width="200" src="https://raw.githubusercontent.com/ios151/sub-store-workers/main/png/cloudflare4.png" alt="Sub-Store Workers">
+<img width="200" src="https://raw.githubusercontent.com/Yeziyu886/sub-store-workers/main/png/cloudflare4.png" alt="Sub-Store Workers">
 <br>
 <br>
 <h2 align="center">Sub-Store Workers</h2>
@@ -11,7 +11,7 @@ Sub-Store 后端的 Cloudflare Workers 移植版
 </p>
 
 <p align="center">
-<a href="https://deploy.workers.cloudflare.com/?url=https://github.com/ios151/sub-store-workers">
+<a href="https://deploy.workers.cloudflare.com/?url=https://github.com/Yeziyu886/sub-store-workers">
 <img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare">
 </a>
 <br><br>
@@ -84,7 +84,7 @@ esbuild.js                    ← 构建脚本，通过插件桥接两者
 #   └── sub-store-workers/  ← 本项目
 
 git clone https://github.com/sub-store-org/Sub-Store.git
-git clone https://github.com/ios151/sub-store-workers.git
+git clone https://github.com/Yeziyu886/sub-store-workers.git
 
 cd sub-store-workers
 npm install
@@ -566,7 +566,7 @@ Account Resources 选择 **Include → 你的账号**。
 在 Surge 中安装模块：
 
 ```
-https://raw.githubusercontent.com/ios151/sub-store-workers/main/surge/SubStorePanel.sgmodule
+https://raw.githubusercontent.com/Yeziyu886/sub-store-workers/main/surge/SubStorePanel.sgmodule
 ```
 
 安装后编辑模块参数填入：
